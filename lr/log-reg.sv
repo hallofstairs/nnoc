@@ -59,6 +59,4 @@ module log_reg #(
     end
   end
 
-
-
 endmodule
