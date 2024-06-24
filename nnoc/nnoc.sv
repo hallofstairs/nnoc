@@ -1,25 +1,58 @@
+`include "./usb/usb-serial-ctrl-ep.sv"
+
+parameter PRESCALE = 51;
+parameter DATA_WIDTH = 8;
+
 module nnoc (
-    input  logic clk,
-    input  logic usr_btn,
-    output logic rgb_led0_r,
-    output logic rgb_led0_g,
-    output logic rgb_led0_b,
-    output logic rst_n
+    input logic clk,
+    input logic rst_n, // Active-low reset
+
+    inout  logic usb_d_p,    // USB D+
+    inout  logic usb_d_n,    // USB D-
+    output logic usb_pullup  // Tell host there's USB connected
 );
-  reg [26:0] counter = 0;
 
-  // Increment the register by 1 each clock tick
-  always_ff @(posedge clk) counter <= counter + 1;
+  // USB core signals
+  logic       usb_p_tx;
+  logic       usb_n_tx;
+  logic       usb_p_rx;
+  logic       usb_n_rx;
+  logic       usb_tx_en;
+  logic [7:0] uart_tx_data;
+  logic       uart_tx_valid;
+  logic       uart_tx_ready;
+  logic [7:0] uart_rx_data;
+  logic       uart_rx_valid;
+  logic       uart_rx_ready;
 
-  // Output inverted values of counter onto LEDs
-  assign rgb_led0_r = ~counter[24];
-  assign rgb_led0_g = ~counter[25];
-  assign rgb_led0_b = 1;
+  // Instantiate USB core
+  usb_serial_ctrl_ep #(
+      .PIN_USB_P("N1"),
+      .PIN_USB_N("M2")
+  ) usb_serial_ctrl_ep_inst (
+      .clk  (clk),
+      .reset(~rst_n),
 
-  // Reset logic on button press
-  reg reset_sr = 1'b1;
-  always_ff @(posedge clk) reset_sr <= usr_btn;
+      // USB pins
+      .pin_usb_p(usb_d_p),
+      .pin_usb_n(usb_d_n),
 
-  assign rst_n = reset_sr;
+      // USB signals
+      .usb_p_tx,
+      .usb_n_tx,
+      .usb_p_rx,
+      .usb_n_rx,
+      .usb_tx_en,
+
+      // UART interface
+      .uart_tx_data,
+      .uart_tx_valid,
+      .uart_tx_ready,
+      .uart_rx_data,
+      .uart_rx_valid,
+      .uart_rx_ready
+  );
 
 endmodule
+
+
